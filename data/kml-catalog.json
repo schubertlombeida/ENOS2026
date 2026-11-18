@@ -1,0 +1,219 @@
+{
+  "layers": [
+    {
+      "id": "catastro-2021",
+      "title": "Catastro urbano · 2021",
+      "color": "#9569a1",
+      "type": "vector",
+      "file": "catastro-2021.geojson",
+      "bounds": [
+        [
+          -0.7556124764310732,
+          -90.33889920832478
+        ],
+        [
+          -0.6872218016737771,
+          -90.3077476139422
+        ]
+      ],
+      "count": 6656,
+      "original_count": 6802,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "CATASTRO URBANO 2021.kmz",
+      "note": "6,656 elementos en Santa Cruz sur. WGS 84."
+    },
+    {
+      "id": "reciclaje-fv",
+      "title": "Imagen del centro de reciclaje FV",
+      "color": "#6c9060",
+      "type": "image",
+      "file": "reciclaje-fv.webp",
+      "bounds": [
+        [
+          -0.721293464272,
+          -90.327033
+        ],
+        [
+          -0.71353501768,
+          -90.31932588448
+        ]
+      ],
+      "count": 500,
+      "source": "Centro Reciclaje FV.kmz",
+      "note": "Imagen georreferenciada del archivo KMZ. Fecha de captura sin especificar."
+    },
+    {
+      "id": "batimetria",
+      "title": "Curvas batimétricas",
+      "color": "#377f9d",
+      "type": "vector",
+      "file": "batimetria.geojson",
+      "bounds": [
+        [
+          -0.7584186985766614,
+          -90.33109898682949
+        ],
+        [
+          -0.7274488187696438,
+          -90.28867536343229
+        ]
+      ],
+      "count": 1010,
+      "original_count": 1010,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "CURVAS-PROFUNDIDAD.kmz",
+      "note": "1,010 elementos en Santa Cruz sur. WGS 84. Cotas del archivo; referencia vertical sin especificar."
+    },
+    {
+      "id": "curvas-nivel",
+      "title": "Curvas de nivel · Puerto Ayora",
+      "color": "#8e7953",
+      "type": "vector",
+      "file": "curvas-nivel.geojson",
+      "bounds": [
+        [
+          -0.7482530166,
+          -90.3283817611
+        ],
+        [
+          -0.7306644764,
+          -90.3080047107
+        ]
+      ],
+      "count": 995,
+      "original_count": 995,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "CURVAS_NIVEL_PUERTO_AYORA.kmz",
+      "note": "995 elementos en Santa Cruz sur. WGS 84."
+    },
+    {
+      "id": "divino-nino",
+      "title": "Urbanización Divino Niño",
+      "color": "#b159ae",
+      "type": "vector",
+      "file": "divino-nino.geojson",
+      "bounds": [
+        [
+          -0.7142578574830931,
+          -90.33890687227051
+        ],
+        [
+          -0.7058633372383849,
+          -90.32770192593927
+        ]
+      ],
+      "count": 1,
+      "original_count": 1,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "Divino Niño.kmz",
+      "note": "1 elementos en Santa Cruz sur. WGS 84."
+    },
+    {
+      "id": "drenajes-kml",
+      "title": "Red de drenajes · KMZ",
+      "color": "#008796",
+      "type": "vector",
+      "file": "drenajes-kml.geojson",
+      "bounds": [
+        [
+          -0.7725289555934367,
+          -90.3947028566616
+        ],
+        [
+          -0.6442843620294343,
+          -90.25372599242387
+        ]
+      ],
+      "count": 2609,
+      "original_count": 15111,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "drenajes_scz.kmz",
+      "note": "2,609 elementos en Santa Cruz sur. WGS 84."
+    },
+    {
+      "id": "aguacatal-25m",
+      "title": "Encañada Aguacatal · franja 25 m",
+      "color": "#4273ad",
+      "type": "vector",
+      "file": "aguacatal-25m.geojson",
+      "bounds": [
+        [
+          -0.7165639395398973,
+          -90.33497374232857
+        ],
+        [
+          -0.6942438088830867,
+          -90.3291975392094
+        ]
+      ],
+      "count": 1,
+      "original_count": 1,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "ENCAÑADA AGUACATAL EJE 25M.kmz",
+      "note": "1 elementos en Santa Cruz sur. WGS 84."
+    },
+    {
+      "id": "fabricio-valverde",
+      "title": "Sector Fabricio Valverde",
+      "color": "#92712a",
+      "type": "vector",
+      "file": "fabricio-valverde.geojson",
+      "bounds": [
+        [
+          -0.7179305747,
+          -90.3254307601
+        ],
+        [
+          -0.7149681446,
+          -90.3228887429
+        ]
+      ],
+      "count": 1,
+      "original_count": 1,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "Fabricio Valverde.kmz",
+      "note": "1 elementos en Santa Cruz sur. WGS 84."
+    },
+    {
+      "id": "predios-rurales",
+      "title": "Predios rurales",
+      "color": "#658849",
+      "type": "vector",
+      "file": "predios-rurales.geojson",
+      "bounds": [
+        [
+          -0.7180219559111931,
+          -90.42687983067921
+        ],
+        [
+          -0.615091087485725,
+          -90.26170803885086
+        ]
+      ],
+      "count": 1732,
+      "original_count": 2102,
+      "repaired": 0,
+      "duplicates": 0,
+      "source": "Predios Rurales.kmz",
+      "note": "1,732 elementos en Santa Cruz sur. WGS 84."
+    }
+  ],
+  "extent": [
+    [
+      -0.8,
+      -90.39
+    ],
+    [
+      -0.65,
+      -90.26
+    ]
+  ],
+  "notes": "Se conservan geometrías que intersectan Santa Cruz sur, se reparan anillos y se simplifican vértices a ~0,13 m. Las fichas públicas usan atributos geográficos. Los archivos originales conservan todos sus campos en la carpeta de origen."
+}
