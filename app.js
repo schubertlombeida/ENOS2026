@@ -38,6 +38,8 @@ function popup(title, properties, latlng, fallback) {
   element.append(heading);
   const facts = document.createElement("dl");
   const rows = [
+    ["Sector", properties.sector],
+    ["Cota del archivo", properties.cota_m !== undefined ? properties.cota_m + " m" : null],
     ["Coordenadas", latlng.lat.toFixed(6) + ", " + latlng.lng.toFixed(6)],
     ["Fuente", properties.source || properties.origen || fallback],
     ["Estado", properties.destino || properties.estado ||
@@ -97,13 +99,13 @@ async function start() {
     "escorrentias_C03_C05.geojson", "cruces_via_baltra.geojson", "corredor_vial_baltra.geojson",
     "referencias.geojson", "cascada_referencia_y_celda.geojson", "encanada_DWG.geojson",
     "entorno_referencial_cascada.geojson", "vias_diango.geojson",
-    "lluvia.json", "afectacion_sngr.geojson", "satellite.json", "igm-vias.geojson", "igm-rios.geojson"
+    "lluvia.json", "afectacion_sngr.geojson", "satellite.json", "igm-vias.geojson", "igm-rios.geojson", "sitrep06_vector.geojson", "barrios.geojson", "kml-catalog.json"
   ];
-  const [view, base, land, drains, east, c0305, crossings, road, refs, cascade, cad, vicinity, referenceRoads, rain, sngr, satellite, igmRoads, igmRivers] =
+  const [view, base, land, drains, east, c0305, crossings, road, refs, cascade, cad, vicinity, referenceRoads, rain, sngr, satellite, igmRoads, igmRivers, sitrep06, neighborhoods, kmlCatalog] =
     await Promise.all(filenames.map(readData));
 
   const map = L.map("map", {zoomSnap: .25, maxZoom: 20});
-  for (const [name, order] of Object.entries({refSurface: 245, refRoad: 250, surface: 260, localRoad: 275, photo: 295, relief: 305, accumulation: 320, cad: 330, drains: 380, official: 390, casing: 415, priority: 425, points: 475})) {
+  for (const [name, order] of Object.entries({refSurface: 245, refRoad: 250, surface: 260, localRoad: 275, satelliteBase: 285, photo: 295, relief: 305, accumulation: 320, cad: 330, supplied: 355, drains: 380, official: 390, casing: 415, priority: 425, points: 475})) {
     map.createPane(name).style.zIndex = order;
   }
   const recenter = () => map.fitBounds(view.initialBounds, {padding: [16, 24], animate: false});
@@ -216,6 +218,38 @@ async function start() {
   slider.addEventListener("input", updateBases);
   updateBases();
 
+
+  const satelliteCheck = document.querySelector("#satellite-basemap");
+  const satelliteSlider = document.querySelector("#satellite-opacity");
+  const satelliteValue = document.querySelector("#satellite-opacity-value");
+  const satelliteCredit = 'EOxCloudless 2025 — <a href="https://maps.eox.at/">EOX</a> (Contains modified Copernicus Sentinel data 2025), <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>';
+  const satelliteBase = new CheckedTiles(
+    "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/g/{z}/{y}/{x}.jpg",
+    {pane: "satelliteBase", maxNativeZoom: 14, maxZoom: 20, minZoom: 0, opacity: .85, attribution: satelliteCredit}
+  );
+  satelliteBase.on("tileunload", event => event.tile.stopTile?.());
+  satelliteBase.on("loading", () => { map.getContainer().dataset.satelliteLoading = "true"; });
+  satelliteBase.on("load", () => { map.getContainer().dataset.satelliteLoading = "false"; });
+  satelliteBase.on("tileerror", () => {
+    if (!map.hasLayer(satelliteBase)) return;
+    satelliteCheck.checked = false;
+    satelliteSlider.disabled = true;
+    map.removeLayer(satelliteBase);
+    map.getContainer().dataset.satelliteLoading = "false";
+    status.textContent = "La imagen satelital no está disponible. Puedes continuar con la cartografía incluida.";
+    status.hidden = false;
+  });
+  satelliteCheck.addEventListener("change", () => {
+    status.hidden = true;
+    satelliteSlider.disabled = !satelliteCheck.checked;
+    setLayer(satelliteBase, satelliteCheck.checked);
+    if (!satelliteCheck.checked) map.getContainer().dataset.satelliteLoading = "false";
+  });
+  satelliteSlider.addEventListener("input", () => {
+    satelliteBase.setOpacity(satelliteSlider.value / 100);
+    satelliteValue.textContent = satelliteSlider.value + " %";
+  });
+
   const hydro = document.querySelector("#hydro-layers");
   const refsPanel = document.querySelector("#reference-layers");
   const model = "Copernicus GLO-30 · modelo de drenaje D8";
@@ -292,6 +326,71 @@ async function start() {
   L.marker(approvedLabel, {icon: labelIcon("Bellavista", "town"), interactive: false, keyboard: false}).addTo(places);
   layerControl(map, refsPanel, "places", "Poblados y referencias", places, true, "#40554e", "dot");
 
+
+  const neighborhoodLabels = L.layerGroup();
+  const neighborhoodEntries = [];
+  for (const feature of neighborhoods.features) {
+    const [lng, lat] = feature.geometry.coordinates;
+    const ll = L.latLng(lat, lng);
+    const marker = L.marker(ll, {
+      icon: labelIcon(feature.properties.name, "neighborhood"), keyboard: true
+    }).bindPopup(popup(feature.properties.name, feature.properties, ll, "Referencia cartográfica"));
+    neighborhoodLabels.addLayer(marker);
+    const leader = L.polyline([], {color: "#637b69", weight: .8, opacity: .7, interactive: false, pane: "supplied"});
+    neighborhoodLabels.addLayer(leader);
+    neighborhoodEntries.push({marker, leader, anchor: ll});
+  }
+  layerControl(map, refsPanel, "neighborhoods", "Barrios y sectores", neighborhoodLabels, true, "#526d55");
+
+  function arrangeNeighborhoodLabels() {
+    if (!map.hasLayer(neighborhoodLabels)) return;
+    const viewport = map.getContainer().getBoundingClientRect();
+    const occupied = [...map.getContainer().querySelectorAll(".map-label:not(.neighborhood) span")].map(element => {
+      const r = element.getBoundingClientRect();
+      return {x: r.left - viewport.left, y: r.top - viewport.top, w: r.width + 5, h: r.height + 5};
+    });
+    const dimensions = map.getSize();
+    const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x &&
+      a.y < b.y + b.h && a.y + a.h > b.y;
+    for (const {marker, leader, anchor} of neighborhoodEntries) {
+      const element = marker.getElement()?.querySelector("span");
+      if (!element) continue;
+      const point = map.latLngToContainerPoint(anchor);
+      const bounds = element.getBoundingClientRect();
+      const width = bounds.width + 6;
+      const height = bounds.height + 6;
+      const candidates = [];
+      for (const distance of [0, 20, 40, 65, 90, 120, 155]) {
+        const offsets = distance === 0 ? [[8, -8]] :
+          [[8, -distance], [8, distance], [-width - 8, -distance], [-width - 8, distance],
+           [distance, -8], [-width - distance, -8]];
+        for (const [dx, dy] of offsets) {
+          const rect = {x: point.x + dx, y: point.y + dy, w: width, h: height};
+          if (rect.x >= 5 && rect.y >= 44 && rect.x + width < dimensions.x - 5 &&
+              rect.y + height < dimensions.y - 22 && !occupied.some(other => overlap(rect, other))) {
+            candidates.push(rect);
+          }
+        }
+        if (candidates.length) break;
+      }
+      if (!candidates.length) {
+        marker.setOpacity(0);
+        leader.setLatLngs([]);
+        continue;
+      }
+      const rect = candidates[0];
+      occupied.push(rect);
+      marker.setOpacity(1);
+      marker.setLatLng(map.containerPointToLatLng([rect.x - 7, rect.y + 7]));
+      const end = map.containerPointToLatLng([rect.x, rect.y + height / 2]);
+      leader.setLatLngs(point.distanceTo(map.latLngToContainerPoint(end)) > 24 ? [anchor, end] : []);
+    }
+  }
+  const scheduleLabels = () => requestAnimationFrame(arrangeNeighborhoodLabels);
+  map.on("zoomend moveend resize", scheduleLabels);
+  document.getElementById("neighborhoods").addEventListener("change", scheduleLabels);
+  scheduleLabels();
+
   const terrain = document.querySelector("#terrain-layers");
   const official = document.querySelector("#official-layers");
   function textLink(url, text) {
@@ -302,9 +401,10 @@ async function start() {
     link.textContent = text;
     return link;
   }
-  function imageLayer(id, name, filename, pane, opacity, note, source, scaleBands) {
-    const layer = L.imageOverlay(asset(filename), view.initialBounds, {pane, opacity});
-    layerControl(map, terrain, id, name, layer, false);
+  function imageLayer(id, name, filename, pane, opacity, note, source, scaleBands, options = {}) {
+    const imageContainer = options.container || (pane === "photo" ? document.querySelector("#sector-kml-layers") : terrain);
+    const layer = L.imageOverlay(asset(filename), options.bounds || view.initialBounds, {pane, opacity});
+    layerControl(map, imageContainer, id, name, layer, false);
     const details = document.createElement("div");
     details.hidden = true;
     const description = document.createElement("p");
@@ -331,9 +431,10 @@ async function start() {
     range.setAttribute("aria-label", "Opacidad de " + name);
     range.addEventListener("input", () => layer.setOpacity(range.value / 100));
     details.append(range);
-    terrain.append(details);
+    imageContainer.append(details);
     const checkbox = document.getElementById(id);
     checkbox.addEventListener("change", () => { details.hidden = !checkbox.checked; });
+    return layer;
   }
   const demSource = "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM";
   imageLayer("relief", "Relieve sombreado", "relieve.webp", "relief", .62,
@@ -347,6 +448,7 @@ async function start() {
       scene.clouds.toLocaleString("es", {maximumFractionDigits: 1}) +
       " % de nubes en el corredor según la clasificación de la escena. Comparación visual limitada.", scene.source);
   }
+
 
   const sectorColors = {"La Cascada": "#da5667", "Los Arrayanes": "#e28a36", "La Unión": "#389773"};
   const floods = L.geoJSON(sngr, {
@@ -372,6 +474,67 @@ async function start() {
   officialNote.className = "layer-note";
   officialNote.append(textLink(sngr.features[0].properties.url, "Mapa oficial · corte 4 de noviembre de 2026"));
   official.append(officialNote);
+
+
+  const reconstructed = L.geoJSON(sitrep06, {
+    pane: "official",
+    style: feature => {
+      const p = feature.properties;
+      const color = p.kind === "sector" ? sectorColors[p.name] :
+        p.kind === "canada" ? "#823d39" : "#2f9fc6";
+      return {color, fillColor: color, fillOpacity: .2, weight: p.kind === "sector" ? 2 : 2.4};
+    },
+    pointToLayer: (feature, ll) => L.circleMarker(ll, {
+      pane: "points", radius: 4, color: "#8e4c21", fillColor: "#ea922e", fillOpacity: 1, weight: 1
+    }),
+    onEachFeature: (feature, layer) => layer.on("click", event => {
+      const p = feature.properties;
+      const item = popup(p.name, p, event.latlng, p.source);
+      item.append(textLink(p.url, "Documento original · última página"));
+      L.popup().setLatLng(event.latlng).setContent(item).openOn(map);
+    })
+  });
+  layerControl(map, official, "sitrep06", "Mapa SNGR · SitRep 06 · vectorial", reconstructed, false, "#2f9fc6");
+
+  const sectorLegend = document.createElement("div");
+  sectorLegend.className = "sector-legend";
+  sectorLegend.hidden = true;
+  const legendTitle = document.createElement("strong");
+  legendTitle.textContent = "Sectores afectados · SNGR";
+  sectorLegend.append(legendTitle);
+  for (const [name, color] of Object.entries(sectorColors)) {
+    const row = document.createElement("div");
+    const chip = document.createElement("span");
+    chip.className = "sector-chip";
+    chip.style.backgroundColor = color;
+    row.append(chip, name);
+    sectorLegend.append(row);
+  }
+  const legendExplanation = document.createElement("p");
+  legendExplanation.textContent = "Cada color identifica un sector afectado. Las profundidades modeladas del mapa original usan una escala de azules.";
+  sectorLegend.append(legendExplanation);
+  official.append(sectorLegend);
+  function updateSectorLegend() {
+    sectorLegend.hidden = !document.getElementById("sngr").checked &&
+      !document.getElementById("sitrep06").checked;
+  }
+  for (const id of ["sngr", "sitrep06"]) {
+    document.getElementById(id).addEventListener("change", updateSectorLegend);
+  }
+  const vectorActions = document.createElement("p");
+  vectorActions.className = "layer-note";
+  const focusVector = document.createElement("button");
+  focusVector.type = "button";
+  focusVector.textContent = "Ver La Cascada ampliada";
+  focusVector.addEventListener("click", () => {
+    document.getElementById("sitrep06").checked = true;
+    updateSectorLegend();
+    if (!map.hasLayer(reconstructed)) reconstructed.addTo(map);
+    map.fitBounds(reconstructed.getBounds(), {padding: [24, 24]});
+    if (window.innerWidth <= 700) setPanel(false);
+  });
+  vectorActions.append(focusVector);
+  official.append(vectorActions);
 
   layerControl(map, official, "igm-vias", "Red vial oficial · IGM 1:25.000",
     routes(igmRoads, "Vía cartografiada", "#85593e", 1.2, "", null, "Instituto Geográfico Militar", "official"), false, "#85593e");
@@ -436,6 +599,99 @@ async function start() {
   ));
   layerControl(map, official, "rain-stations", "Estaciones y lluvia histórica", stations, false, "#79cae5", "dot");
 
+
+  const suppliedGroups = {
+    "catastro-2021": "#cadastre-layers",
+    "predios-rurales": "#cadastre-layers",
+    "curvas-nivel": "#terrain-kml-layers",
+    "batimetria": "#terrain-kml-layers",
+    "drenajes-kml": "#hydro-layers",
+    "aguacatal-25m": "#hydro-layers",
+    "divino-nino": "#sector-kml-layers",
+    "fabricio-valverde": "#sector-kml-layers",
+    "reciclaje-fv": "#sector-kml-layers"
+  };
+  for (const entry of kmlCatalog.layers) {
+    const suppliedContainer = document.querySelector(suppliedGroups[entry.id]);
+    const group = L.layerGroup();
+    layerControl(map, suppliedContainer, "kml-" + entry.id, entry.title, group, false, entry.color);
+    const checkbox = document.getElementById("kml-" + entry.id);
+    const note = document.createElement("p");
+    note.className = "layer-note";
+    note.textContent = entry.note;
+    suppliedContainer.append(note);
+    const tools = document.createElement("div");
+    tools.className = "supplied-tools";
+    const zoom = document.createElement("button");
+    zoom.type = "button";
+    zoom.textContent = "Ver zona";
+    const opacity = document.createElement("input");
+    opacity.type = "range";
+    opacity.min = "10";
+    opacity.max = "100";
+    opacity.value = entry.type === "image" ? "85" : "75";
+    opacity.setAttribute("aria-label", "Opacidad de " + entry.title);
+    tools.append(zoom, opacity);
+    suppliedContainer.append(tools);
+    let loaded = false;
+    let pending;
+    function applyOpacity() {
+      const alpha = opacity.value / 100;
+      group.eachLayer(layer => {
+        if (layer.setOpacity) layer.setOpacity(alpha);
+        else if (layer.setStyle) layer.setStyle({opacity: alpha, fillOpacity: .13 * alpha});
+      });
+    }
+    async function loadLayer() {
+      if (loaded) return;
+      if (pending) return pending;
+      pending = (async () => {
+        note.textContent = "Cargando " + entry.title + "…";
+        if (entry.type === "image") {
+          const image = L.imageOverlay(asset(entry.file), entry.bounds, {pane: "photo", opacity: opacity.value / 100});
+          image.on("error", () => {
+            note.textContent = "No se pudo abrir la imagen. Desactiva y vuelve a activar esta capa.";
+          });
+          group.addLayer(image);
+        } else {
+          const collection = await readData(entry.file);
+          const polygon = ["catastro-2021", "predios-urbanos", "predios-rurales", "divino-nino",
+            "aguacatal-25m", "fabricio-valverde"].includes(entry.id);
+          const layer = L.geoJSON(collection, {
+            pane: "supplied",
+            style: {color: entry.color, weight: polygon ? 1 : 1.2,
+              fill: polygon, fillColor: entry.color, fillOpacity: .1, opacity: .75},
+            pointToLayer: (f, ll) => L.circleMarker(ll, {radius: 4, color: entry.color}),
+            onEachFeature: (feature, item) => {
+              item.on("click", event => {
+                const content = popup(feature.properties.name || entry.title,
+                  feature.properties, event.latlng, entry.source);
+                L.popup({maxWidth: 290}).setLatLng(event.latlng).setContent(content).openOn(map);
+              });
+            }
+          });
+          group.addLayer(layer);
+        }
+        loaded = true;
+        applyOpacity();
+        note.textContent = entry.note;
+      })().catch(error => {
+        console.error(error);
+        note.textContent = "No se pudo cargar esta capa. Vuelve a activarla para intentar de nuevo.";
+      }).finally(() => { pending = null; });
+      return pending;
+    }
+    checkbox.addEventListener("change", () => { if (checkbox.checked) loadLayer(); });
+    zoom.addEventListener("click", async () => {
+      checkbox.checked = true;
+      if (!map.hasLayer(group)) group.addTo(map);
+      await loadLayer();
+      if (entry.bounds) map.fitBounds(entry.bounds, {padding: [24, 30]});
+      if (window.innerWidth <= 700) setPanel(false);
+    });
+    opacity.addEventListener("input", applyOpacity);
+  }
+
   status.hidden = true;
   exportButton.disabled = false;
   exportButton.addEventListener("click", () => downloadMap(map));
@@ -487,6 +743,10 @@ async function downloadMap(map) {
   status.hidden = false;
   try {
     const container = map.getContainer();
+    if (container.dataset.satelliteLoading === "true") {
+      status.textContent = "La imagen satelital sigue cargando. Espera unos segundos y vuelve a descargar.";
+      return;
+    }
     const viewport = container.getBoundingClientRect();
     const width = Math.round(viewport.width);
     const height = Math.round(viewport.height);
@@ -512,6 +772,15 @@ async function downloadMap(map) {
       "Escorrentías modeladas y cruces cartográficos.",
       reportCredit
     ];
+    if (document.getElementById("sngr").checked || document.getElementById("sitrep06").checked) {
+      details.splice(details.length - 1, 0,
+        "Polígonos SNGR · Rojo: La Cascada · Naranja: Los Arrayanes · Verde: La Unión. Colores por sector afectado.");
+    }
+    if (document.getElementById("satellite-basemap").checked) {
+      details.splice(details.length - 1, 0,
+        "Imagen satelital · EOxCloudless 2025 by EOX IT Services GmbH; contains modified Copernicus Sentinel data 2025. CC BY-NC-SA 4.0 · https://maps.eox.at/ · Opacidad " +
+        document.getElementById("satellite-opacity").value + " %");
+    }
     const panes = Object.entries(map.getPanes())
       .filter(([name]) => name !== "mapPane" && name !== "popupPane" && name !== "tooltipPane")
       .map(([, pane]) => pane)

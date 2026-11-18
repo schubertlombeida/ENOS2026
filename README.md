@@ -41,3 +41,32 @@ Revisa el alcance de publicación del PDF, el paquete de datos y la imagen del D
 - Lluvia agregada a mes a partir de las estaciones Bellavista y Puerto Ayora. Fuente: Galapagos Climatology Database, dataZone, Fundación Charles Darwin (https://datazone.darwinfoundation.org/es/clima), licencia CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). Cada mes conserva el número de días registrados. El gráfico muestra valores solo para meses completos.
 
 
+
+## SitRep 06 vectorial
+Se añadió sitrep06_vector.geojson con 28 elementos reconstruidos desde el JPEG de la última página, usando la cuadrícula UTM impresa. Incluye tres sectores, cañada, seis trazados de drenaje y dieciocho cruces. El contorno de inundación y las clases de profundidad requieren geometrías originales. El visor permite activar esta reconstrucción y ampliar su encuadre.
+
+## Mapas Puerto Ayora · archivos KMZ incorporados
+
+Se incorporaron nueve KMZ de la carpeta proporcionada. El catálogo data/kml-catalog.json documenta cantidades, extensión, reparaciones y nombres de origen. Las geometrías son WGS 84, se seleccionan elementos que intersectan el sur de Santa Cruz y se simplifican a aproximadamente 0,13 m, conservando topología. Las cotas constantes de las curvas se conservan en cota_m. CURVAS-PROFUNDIDAD contiene curvas batimétricas; su datum vertical no está especificado.
+
+Las capas catastrales muestran geometría y atributos geográficos. Los nombres de propietarios, cédulas y avalúos de los KMZ originales no se incluyen en la aplicación. Los archivos originales permanecen en la carpeta de origen.
+
+El centro de reciclaje contiene una pirámide de 500 imágenes. Se generó un mosaico de 2400×2400 píxeles georreferenciado y reproyectado a Web Mercator para el navegador. Las coordenadas del KMZ se respetan. La fecha de captura no está especificada.
+
+Miramar se rotuló con los polígonos rurales cuyo sector es MIRAMAR. Divino Niño usa el polígono del KMZ homónimo. El sector Tomás de Berlanga usa los predios con variantes de ese nombre. Las referencias de sector son representativas y no constituyen delimitaciones oficiales de barrios.
+
+Las capas se activan en Escorrentías, Catastros y predios, Relieve y batimetría, Sectores e imágenes y Riesgos y referencias. Ver zona centra el mapa en cada conjunto. El control de opacidad sirve para comparar con las escorrentías. La reconstrucción del mapa de riesgos SNGR está en ese mismo grupo.
+
+Se retiró la capa Predios urbanos 2019 por duplicación del catastro más reciente. El archivo catastral conservado lleva 2021 en su nombre de origen.
+
+
+## Fondo fotográfico satelital
+
+EOxCloudless 2025 / Sentinel-2 está disponible en Fondos del mapa. Se descarga únicamente la vista actual del servicio WMTS de EOX. No se distribuyen teselas en el ZIP. Resolución nativa aproximada de 10 m; se amplía en zooms mayores sin aumentar el detalle original. Requiere internet, funciona desde el HTML autónomo si el navegador permite CORS, y se desactiva si el servidor falla. Incluye transparencia y atribución en pantalla y al descargar PNG.
+
+Atribución: EOxCloudless 2025 by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2025). CC BY-NC-SA 4.0.
+https://maps.eox.at/
+https://cloudless.eox.at/pricing
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+La edición es un mosaico temporal, no una observación del día. El uso comercial de esta edición requiere licencia del proveedor.
+
